@@ -1,3 +1,4 @@
+import os
 from xml.etree import ElementTree
 from urllib.request import urlopen
 from urllib.parse import quote
@@ -47,7 +48,9 @@ def get_dependencies(package_link: str):
                   .replace('=', ' ')
                   .replace('>', ' ').split(' ')[1].split('[')[0]
                  for e in package_info.split('\n')
-                 if e.startswith("Requires-Dist:")})
+                 if e.startswith("Requires-Dist:")
+                 and " extra " not in e
+                 })
 
 
 def build_dependency_graph(package_name):
@@ -85,19 +88,25 @@ def build_dependency_graph(package_name):
 
 
 def main():
-    dd, pc = build_dependency_graph(input("Введите название пакета: "))
-    if not pc:
+    package_name = input("Введите название пакета: ")
+    package_graph, packages_count = build_dependency_graph(package_name)
+    if not packages_count:
         print('Пакет не найден')
         return
     print("<--------------------------------------------------->")
-    if pc < 40 and 'Y' == input('Получить ссылкой? [Y/N]: ').upper():
-        dd = quote(dd)
-        dd = 'https://dreampuf.github.io/GraphvizOnline/#' + dd
-        print(dd)
+    if packages_count < 130 \
+            and 'Y' == input('Получить файлом? [Y/N]: ').upper():
+        package_graph = quote(package_graph)
+        package_graph = 'https://quickchart.io/graphviz?graph=' + package_graph
+        fname = package_name + "_dependencies_graph.svg"
+        with open(fname, "wb") as f:
+            with urlopen(package_graph) as f2:
+                f.write(f2.read())
+        os.startfile(fname, 'open')
     else:
-        if pc > 60:
+        if packages_count > 60:
             print('[https://dreampuf.github.io/GraphvizOnline/] <-- Загрузить текст сюда')
-        print(dd)
+        print(package_graph)
         print('[https://dreampuf.github.io/GraphvizOnline/] <-- Загрузить текст сюда')
 
 
